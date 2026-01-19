@@ -76,7 +76,7 @@ export const handler = async (event) => {
     if (email) {
       issueBody += `\n\n---\n📧 Contact: ${email}`;
     }
-    issueBody += `\n\n_Soumis via formulaire public_`;
+    issueBody += `\n\n_Soumis via SC_issue - Auto _`;
 
     const response = await octokit.issues.create({
       owner,
