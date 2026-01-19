@@ -6,6 +6,7 @@ export const handler = async (event) => {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json'
   };
 
   // Handle preflight
@@ -26,7 +27,20 @@ export const handler = async (event) => {
   }
 
   try {
-    const { title, description, type, email } = JSON.parse(event.body);
+    // Parse body
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(event.body);
+    } catch (e) {
+      console.error('JSON parse error:', e);
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Invalid JSON' })
+      };
+    }
+
+    const { title, description, type, email } = parsedBody;
 
     // Validation
     if (!title || !description) {
@@ -38,23 +52,40 @@ export const handler = async (event) => {
     }
 
     // Check environment variables
-    if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_OWNER || !process.env.GITHUB_REPO) {
-      console.error('Missing environment variables:', {
-        hasToken: !!process.env.GITHUB_TOKEN,
-        hasOwner: !!process.env.GITHUB_OWNER,
-        hasRepo: !!process.env.GITHUB_REPO
-      });
+    const hasToken = !!process.env.GITHUB_TOKEN;
+    const hasOwner = !!process.env.GITHUB_OWNER;
+    const hasRepo = !!process.env.GITHUB_REPO;
+
+    console.log('Environment check:', { hasToken, hasOwner, hasRepo });
+
+    if (!hasToken || !hasOwner || !hasRepo) {
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: 'Configuration serveur incomplète' })
+        body: JSON.stringify({ 
+          error: 'Configuration serveur incomplète',
+          details: 'Variables d\'environnement manquantes. Vérifiez GITHUB_TOKEN, GITHUB_OWNER et GITHUB_REPO dans Netlify.'
+        })
       };
     }
 
     // Initialize Octokit
-    const octokit = new Octokit({
-      auth: process.env.GITHUB_TOKEN
-    });
+    let octokit;
+    try {
+      octokit = new Octokit({
+        auth: process.env.GITHUB_TOKEN
+      });
+    } catch (e) {
+      console.error('Octokit initialization error:', e);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Erreur d\'initialisation',
+          details: e.message
+        })
+      };
+    }
 
     // Label mapping
     const labelMap = {
@@ -80,13 +111,32 @@ export const handler = async (event) => {
     issueBody += `\n\n_Issue soumise via le formulaire public_`;
 
     // Create issue
-    const { data } = await octokit.issues.create({
-      owner: process.env.GITHUB_OWNER,
-      repo: process.env.GITHUB_REPO,
-      title: `${emojiMap[type]} ${title}`,
-      body: issueBody,
-      labels: [labelMap[type]]
-    });
+    console.log('Creating issue for:', process.env.GITHUB_OWNER, '/', process.env.GITHUB_REPO);
+    
+    let data;
+    try {
+      const response = await octokit.issues.create({
+        owner: process.env.GITHUB_OWNER,
+        repo: process.env.GITHUB_REPO,
+        title: `${emojiMap[type]} ${title}`,
+        body: issueBody,
+        labels: [labelMap[type]]
+      });
+      data = response.data;
+    } catch (e) {
+      console.error('GitHub API error:', e);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Erreur GitHub API',
+          details: e.message,
+          status: e.status
+        })
+      };
+    }
+
+    console.log('Issue created successfully:', data.number);
 
     return {
       statusCode: 200,
@@ -99,14 +149,15 @@ export const handler = async (event) => {
     };
 
   } catch (error) {
-    console.error('Error creating issue:', error);
+    console.error('Unexpected error:', error);
     
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error: 'Erreur lors de la création de l\'issue',
-        details: error.message
+        error: 'Erreur serveur',
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       })
     };
   }
