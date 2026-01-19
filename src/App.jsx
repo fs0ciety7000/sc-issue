@@ -36,7 +36,7 @@ export default function App() {
       if (response.ok) {
         setStatus({
           type: 'success',
-          message: `Issue #${data.number} créée avec succès`
+          message: `✅ Issue #${data.number} créée avec succès !`
         });
         setFormData({ title: '', description: '', type: 'bug', email: '' });
       } else {
@@ -45,126 +45,129 @@ export default function App() {
     } catch (error) {
       setStatus({
         type: 'error',
-        message: error.message
+        message: `❌ ${error.message}`
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const typeConfig = {
+    bug: { icon: '🐛', label: 'Bug', desc: 'Signaler un problème', color: 'text-red-600' },
+    feature: { icon: '✨', label: 'Feature', desc: 'Nouvelle fonctionnalité', color: 'text-blue-600' },
+    improvement: { icon: '🚀', label: 'Amélioration', desc: 'Optimisation', color: 'text-green-600' }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl mx-auto py-12 px-4">
+    <div className="min-h-screen relative">
+      {/* Decorative gradient orbs */}
+      <div className="gradient-orb w-96 h-96 bg-green-400 top-20 -left-48" />
+      <div className="gradient-orb w-80 h-80 bg-blue-400 bottom-20 -right-40" style={{ animationDelay: '5s' }} />
+      <div className="gradient-orb w-72 h-72 bg-purple-400 top-1/2 left-1/2" style={{ animationDelay: '10s' }} />
+
+      <div className="container max-w-5xl mx-auto py-16 px-4 relative z-10">
         {/* Header */}
-        <header className="mb-12">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-              <span className="text-2xl">🚀</span>
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Space Conquest</h1>
-              <p className="text-sm text-muted-foreground">ToDO System</p>
+        <header className="text-center mb-16">
+          <div className="inline-flex items-center justify-center gap-4 mb-6">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform">
+              <span className="text-3xl">🚀</span>
             </div>
           </div>
-          <p className="text-muted-foreground leading-relaxed">
-            Signalez des bugs, proposez des améliorations ou soumettez de nouvelles fonctionnalités pour le projet Space Conquest.
+          <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            Space Conquest
+          </h1>
+          <div className="inline-block px-4 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-6">
+            ToDO System
+          </div>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Contribuez à l'amélioration du projet en signalant des bugs, en proposant des fonctionnalités ou des optimisations.
           </p>
         </header>
 
-        {/* Form */}
-        <div className="bg-card border border-border rounded-lg p-8">
+        {/* Main Form Card */}
+        <div className="bg-white rounded-2xl shadow-xl border border-border/50 p-8 md:p-12 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Type Selection */}
-            <div className="space-y-3">
-              <Label className="text-base font-medium">Type</Label>
+            <div className="space-y-4">
+              <Label className="text-lg font-semibold">Type de contribution</Label>
               <RadioGroup
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
-                className="grid grid-cols-3 gap-3"
+                className="grid grid-cols-1 md:grid-cols-3 gap-4"
               >
-                <label htmlFor="bug" className="cursor-pointer">
-                  <div className={`flex items-center gap-3 rounded-lg border-2 p-4 transition-all ${
-                    formData.type === 'bug'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-muted-foreground/50'
-                  }`}>
-                    <RadioGroupItem value="bug" id="bug" />
-                    <div>
-                      <div className="font-medium">Bug</div>
-                      <div className="text-xs text-muted-foreground">Signaler un problème</div>
+                {Object.entries(typeConfig).map(([type, config]) => (
+                  <label key={type} htmlFor={type} className="cursor-pointer group">
+                    <div className={`relative rounded-xl border-2 p-6 transition-all duration-300 hover:shadow-lg ${
+                      formData.type === type
+                        ? 'border-primary bg-green-50 shadow-md'
+                        : 'border-border bg-white hover:border-primary/50'
+                    }`}>
+                      <RadioGroupItem value={type} id={type} className="sr-only" />
+                      <div className="flex items-start gap-4">
+                        <div className={`text-4xl ${config.color} group-hover:scale-110 transition-transform`}>
+                          {config.icon}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-base mb-1">{config.label}</div>
+                          <div className="text-sm text-muted-foreground">{config.desc}</div>
+                        </div>
+                      </div>
+                      {formData.type === type && (
+                        <div className="absolute top-3 right-3 h-6 w-6 rounded-full bg-primary flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </label>
-
-                <label htmlFor="feature" className="cursor-pointer">
-                  <div className={`flex items-center gap-3 rounded-lg border-2 p-4 transition-all ${
-                    formData.type === 'feature'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-muted-foreground/50'
-                  }`}>
-                    <RadioGroupItem value="feature" id="feature" />
-                    <div>
-                      <div className="font-medium">Feature</div>
-                      <div className="text-xs text-muted-foreground">Nouvelle fonctionnalité</div>
-                    </div>
-                  </div>
-                </label>
-
-                <label htmlFor="improvement" className="cursor-pointer">
-                  <div className={`flex items-center gap-3 rounded-lg border-2 p-4 transition-all ${
-                    formData.type === 'improvement'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-muted-foreground/50'
-                  }`}>
-                    <RadioGroupItem value="improvement" id="improvement" />
-                    <div>
-                      <div className="font-medium">Amélioration</div>
-                      <div className="text-xs text-muted-foreground">Optimisation</div>
-                    </div>
-                  </div>
-                </label>
+                  </label>
+                ))}
               </RadioGroup>
             </div>
 
             {/* Title */}
-            <div className="space-y-2">
-              <Label htmlFor="title">Titre</Label>
+            <div className="space-y-3">
+              <Label htmlFor="title" className="text-base font-semibold">
+                Titre <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Résumé concis du problème ou de la suggestion"
+                placeholder="Ex: Correction du calcul de trajectoire"
                 required
-                className="h-11"
+                className="h-12 text-base"
               />
             </div>
 
             {/* Description with Markdown */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="description">Description</Label>
-                <span className="text-xs text-muted-foreground">Markdown supporté</span>
+                <Label htmlFor="description" className="text-base font-semibold">
+                  Description <span className="text-destructive">*</span>
+                </Label>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                  📝 Markdown supporté
+                </span>
               </div>
               
               <Tabs defaultValue="write" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="write">Écrire</TabsTrigger>
-                  <TabsTrigger value="preview">Aperçu</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 h-11">
+                  <TabsTrigger value="write" className="text-sm">✏️ Écrire</TabsTrigger>
+                  <TabsTrigger value="preview" className="text-sm">👁️ Aperçu</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="write" className="mt-2">
+                <TabsContent value="write" className="mt-3">
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Décrivez en détail...\n\nVous pouvez utiliser Markdown :\n- **gras** et *italique*\n- Listes à puces\n- `code`\n- [liens](url)\n- etc."
-                    className="min-h-[240px] font-mono text-sm"
+                    placeholder="Décrivez en détail votre observation...\n\n**Markdown disponible:**\n- **gras** et *italique*\n- Listes à puces\n- `code inline`\n- ```code blocks```\n- [liens](url)\n- > citations\n- Tableaux\n- Et plus encore !"
+                    className="min-h-[280px] font-mono text-sm leading-relaxed"
                     required
                   />
                 </TabsContent>
                 
-                <TabsContent value="preview" className="mt-2">
-                  <div className="min-h-[240px] rounded-md border border-input bg-background px-3 py-2 overflow-auto">
+                <TabsContent value="preview" className="mt-3">
+                  <div className="min-h-[280px] rounded-lg border-2 border-dashed border-border bg-accent/30 px-4 py-3 overflow-auto">
                     {formData.description ? (
                       <div className="markdown-preview">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -172,7 +175,9 @@ export default function App() {
                         </ReactMarkdown>
                       </div>
                     ) : (
-                      <p className="text-muted-foreground text-sm">Rien à prévisualiser</p>
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground text-sm">👁️ Rien à prévisualiser pour le moment</p>
+                      </div>
                     )}
                   </div>
                 </TabsContent>
@@ -180,25 +185,31 @@ export default function App() {
             </div>
 
             {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email (optionnel)</Label>
+            <div className="space-y-3">
+              <Label htmlFor="email" className="text-base font-semibold">
+                Email <span className="text-muted-foreground font-normal">(optionnel)</span>
+              </Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="votre@email.com"
-                className="h-11"
+                className="h-12 text-base"
               />
-              <p className="text-xs text-muted-foreground">
-                Pour recevoir des notifications. Votre email ne sera pas publié.
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <span>🔒</span>
+                <span>Votre email reste privé et ne sera jamais publié publiquement</span>
               </p>
             </div>
 
             {/* Status */}
             {status.message && (
-              <Alert variant={status.type === 'error' ? 'destructive' : 'default'}>
-                <AlertDescription>{status.message}</AlertDescription>
+              <Alert 
+                variant={status.type === 'error' ? 'destructive' : 'default'}
+                className={status.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : ''}
+              >
+                <AlertDescription className="text-base font-medium">{status.message}</AlertDescription>
               </Alert>
             )}
 
@@ -206,16 +217,31 @@ export default function App() {
             <Button 
               type="submit" 
               disabled={isLoading} 
-              className="w-full h-11"
+              className="w-full h-14 text-base font-semibold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all"
             >
-              {isLoading ? 'Envoi en cours...' : 'Soumettre'}
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin">⌛</span>
+                  <span>Envoi en cours...</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <span>🚀</span>
+                  <span>Soumettre la contribution</span>
+                </span>
+              )}
             </Button>
           </form>
         </div>
 
         {/* Footer */}
-        <footer className="mt-8 text-center text-sm text-muted-foreground">
-          <p>Propulsé par GitHub Issues • Toutes les soumissions sont publiques</p>
+        <footer className="mt-12 text-center">
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-white rounded-full shadow-md border border-border/50">
+            <span className="text-sm text-muted-foreground">Propulsé par</span>
+            <span className="font-semibold text-foreground">GitHub Issues</span>
+            <span className="text-muted-foreground">•</span>
+            <span className="text-sm text-muted-foreground">Open Source</span>
+          </div>
         </footer>
       </div>
     </div>
