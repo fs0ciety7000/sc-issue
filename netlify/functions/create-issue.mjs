@@ -18,10 +18,24 @@ export const handler = async (event) => {
     };
   }
 
+  let Octokit;
   try {
-    // Dynamic import to avoid initialization issues
-    const { Octokit } = await import('@octokit/rest');
-    
+    // Import Octokit dynamically
+    const octokitModule = await import('@octokit/rest');
+    Octokit = octokitModule.Octokit;
+  } catch (importError) {
+    console.error('Failed to import Octokit:', importError);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Module import error',
+        details: importError.message 
+      })
+    };
+  }
+
+  try {
     const { title, description, type, email } = JSON.parse(event.body || '{}');
 
     if (!title || !description) {
@@ -37,32 +51,39 @@ export const handler = async (event) => {
     const repo = process.env.GITHUB_REPO;
 
     if (!token || !owner || !repo) {
-      console.error('Missing env vars:', { token: !!token, owner: !!owner, repo: !!repo });
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ 
-          error: 'Configuration manquante',
-          debug: { hasToken: !!token, hasOwner: !!owner, hasRepo: !!repo }
-        })
+        body: JSON.stringify({ error: 'Configuration manquante' })
       };
     }
 
     const octokit = new Octokit({ auth: token });
 
-    const labelMap = { bug: 'bug', feature: 'enhancement', improvement: 'enhancement' };
-    const emojiMap = { bug: '🐛', feature: '✨', improvement: '🚀' };
+    const labelMap = { 
+      bug: 'bug', 
+      feature: 'enhancement', 
+      improvement: 'enhancement' 
+    };
+    
+    const emojiMap = { 
+      bug: '🐛', 
+      feature: '✨', 
+      improvement: '🚀' 
+    };
 
     let issueBody = description;
-    if (email) issueBody += `\n\n---\n📧 Contact: ${email}`;
+    if (email) {
+      issueBody += `\n\n---\n📧 Contact: ${email}`;
+    }
     issueBody += `\n\n_Soumis via formulaire public_`;
 
-    const { data } = await octokit.issues.create({
+    const response = await octokit.issues.create({
       owner,
       repo,
-      title: `${emojiMap[type]} ${title}`,
+      title: `${emojiMap[type] || ''} ${title}`,
       body: issueBody,
-      labels: [labelMap[type]]
+      labels: [labelMap[type] || 'enhancement']
     });
 
     return {
@@ -70,19 +91,34 @@ export const handler = async (event) => {
       headers,
       body: JSON.stringify({
         success: true,
-        number: data.number,
-        url: data.html_url
+        number: response.data.number,
+        url: response.data.html_url
       })
     };
 
   } catch (error) {
     console.error('Function error:', error);
+    
+    // GitHub API specific errors
+    if (error.status) {
+      return {
+        statusCode: error.status,
+        headers,
+        body: JSON.stringify({
+          error: 'GitHub API error',
+          message: error.message,
+          status: error.status
+        })
+      };
+    }
+
+    // General errors
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error: error.message || 'Erreur inconnue',
-        type: error.constructor.name
+        error: 'Server error',
+        message: error.message
       })
     };
   }
